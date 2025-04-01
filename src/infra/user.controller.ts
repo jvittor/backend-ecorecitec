@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { prisma } from '../utils/prisma';
 import { AuthenticateUserUseCase } from '../application/usecases/user.auth.usecases';
+import { RegisterUserUseCase } from '../application/usecases/user.register.usecases';
+import { EmailService } from './services/email.service';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -26,45 +28,21 @@ export class UserController {
 
   async register(req: Request, res: Response): Promise<Response> {
     const { email, password, name } = req.body;
+
     if (!email || !password || !name) {
-        return res.status(400).json({ error: "Email, senha e nome são obrigatórios!" });
+      return res.status(400).json({ error: 'Email, senha e nome são obrigatórios!' });
     }
 
     try {
-        const existingUser = await prisma.user.findUnique({ where: { email } });
-        if (existingUser) {
-            return res.status(400).json({ error: "E-mail já está em uso!" });
-        }
+      const emailService = new EmailService();
+      const registerUserUseCase = new RegisterUserUseCase(prisma, emailService);
 
-        const hashedPassword = await bcrypt.hash(password, 10);
-        let username = name.toLowerCase().replace(/\s+/g, "_");
-        let uniqueUsername = username;
-        let counter = 1;
+      const { user, token } = await registerUserUseCase.execute({ email, password, name });
 
-        while (await prisma.user.findUnique({ where: { username: uniqueUsername } })) {
-            uniqueUsername = `${username}${counter}`;
-            counter++;
-        }
-
-        const newUser = await prisma.user.create({
-            data: {
-                email,
-                username: uniqueUsername,
-                password: hashedPassword,
-                name,
-                metamaskAddress: null,
-            },
-        });
-        const token = jwt.sign(
-            { id: newUser.id, role: "user" },
-            process.env.SECRET_KEY as string,
-            { expiresIn: "1d" }
-        );
-
-        return res.status(201).json({ user: newUser, token });
+      return res.status(201).json({ user, token });
     } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Erro ao registrar o usuário.";
-        return res.status(500).json({ error: errorMessage });
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao registrar o usuário.';
+      return res.status(500).json({ error: errorMessage });
     }
-}
+  }
 }
