@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 
-export class EmailService {
+export class EmailRegisterService {
   private transporter;
 
   constructor() {
