@@ -1,7 +1,6 @@
-import { IUserRepository } from '../../domain/repositories/user.repositories';
-import { User } from '../../domain/entities/user.entities';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { PrismaClient } from '@prisma/client';
 
 interface AuthenticateUserDTO {
   email: string;
@@ -9,10 +8,10 @@ interface AuthenticateUserDTO {
 }
 
 export class AuthenticateUserUseCase {
-  constructor(private userRepository: IUserRepository, private secretKey: string) {}
+  constructor(private prisma: PrismaClient, private secretKey: string) {}
 
-  async execute(data: AuthenticateUserDTO): Promise<{ user: User; token: string }> {
-    const user = await this.userRepository.findByEmail(data.email);
+  async execute(data: AuthenticateUserDTO): Promise<{ user: any; token: string }> {
+    const user = await this.prisma.user.findUnique({ where: { email: data.email } });
 
     if (!user) {
       throw new Error('Usuário não encontrado!');
@@ -24,7 +23,7 @@ export class AuthenticateUserUseCase {
       throw new Error('Senha incorreta!');
     }
 
-    const token = jwt.sign({ id: user.id, role: user.role }, this.secretKey, {
+    const token = jwt.sign({ id: user.id }, this.secretKey, {
       expiresIn: '1d',
     });
 
