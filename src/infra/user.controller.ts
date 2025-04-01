@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../utils/prisma';
-import { AuthenticateUserUseCase } from '../application/usecases/user.auth.usecases';
+import { AuthenticateUserUseCase } from '../application/usecases/user.login.usecases';
 import { RegisterUserUseCase } from '../application/usecases/user.register.usecases';
 import { EmailService } from './services/email.service';
 import bcrypt from 'bcryptjs';
