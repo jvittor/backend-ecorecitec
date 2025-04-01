@@ -9,6 +9,12 @@ export class UserController {
 
     try {
       const { user, token } = await authenticateUserUseCase.execute({ email, password });
+      res.cookie('authToken', token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        maxAge: 24 * 60 * 60 * 1000,
+      });
       return res.status(200).json({ user, token });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
