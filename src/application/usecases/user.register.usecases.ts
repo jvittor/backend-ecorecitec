@@ -31,8 +31,7 @@ export class RegisterUserUseCase {
       uniqueUsername = `${username}${counter}`;
       counter++;
     }
-
-    // Cria o novo usuário no banco de dados
+    
     const newUser = await this.prisma.user.create({
       data: {
         email,
