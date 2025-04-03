@@ -12,16 +12,11 @@ class AuthenticateUserUseCase {
         this.secretKey = secretKey;
     }
     async execute(data) {
-        const { email, password } = data;
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            throw new Error('Formato de e-mail inválido!');
-        }
-        const user = await this.prisma.user.findUnique({ where: { email } });
+        const user = await this.prisma.user.findUnique({ where: { email: data.email } });
         if (!user) {
             throw new Error('Usuário não encontrado!');
         }
-        const isValidPassword = await bcryptjs_1.default.compare(password, user.password);
+        const isValidPassword = await bcryptjs_1.default.compare(data.password, user.password);
         if (!isValidPassword) {
             throw new Error('Senha incorreta!');
         }
