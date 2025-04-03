@@ -15,6 +15,10 @@ class RegisterUserUseCase {
     }
     async execute(data) {
         const { email, password, name } = data;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            throw new Error('Formato de e-mail inválido!');
+        }
         const existingUser = await this.prisma.user.findUnique({ where: { email } });
         if (existingUser) {
             throw new Error('E-mail já está em uso!');
@@ -27,7 +31,6 @@ class RegisterUserUseCase {
             uniqueUsername = `${username}${counter}`;
             counter++;
         }
-        // Cria o novo usuário no banco de dados
         const newUser = await this.prisma.user.create({
             data: {
                 email,
@@ -37,16 +40,23 @@ class RegisterUserUseCase {
                 metamaskAddress: null,
             },
         });
-        await this.emailService.sendEmail(newUser.email, 'Bem-vindo ao Ecorecitec!', `<h1>Olá, ${newUser.name}!</h1>
-      <p>Obrigado por se registrar no Ecorecitec.</p>
-      <p>Seus dados:</p>
-      <ul>
-        <li>Email: ${newUser.email}</li>
-        <li>Username: ${newUser.username}</li>
-      </ul>
-      <p>Estamos felizes em tê-lo conosco!</p>`);
+        let emailError;
+        try {
+            await this.emailService.sendEmail(newUser.email, 'Bem-vindo ao Ecorecitec!', `<h1>Olá, ${newUser.name}!</h1>
+        <p>Obrigado por se registrar no Ecorecitec.</p>
+        <p>Seus dados:</p>
+        <ul>
+          <li>Email: ${newUser.email}</li>
+          <li>Username: ${newUser.username}</li>
+        </ul>
+        <p>Estamos felizes em tê-lo conosco!</p>`);
+        }
+        catch (error) {
+            console.error('Erro ao enviar o e-mail:', error);
+            emailError = 'Erro ao enviar o e-mail de boas-vindas.';
+        }
         const token = jsonwebtoken_1.default.sign({ id: newUser.id, role: 'user' }, process.env.SECRET_KEY, { expiresIn: '1d' });
-        return { user: newUser, token };
+        return { user: newUser, token, emailError };
     }
 }
 exports.RegisterUserUseCase = RegisterUserUseCase;

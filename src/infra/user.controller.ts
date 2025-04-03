@@ -84,4 +84,36 @@ export class UserController {
       return res.status(500).json({ error: errorMessage });
     }
   }
+
+  async getUser(req: Request, res: Response): Promise<Response> {
+    try {
+      const token = req.cookies['authToken'];
+  
+      if (!token) {
+        return res.status(401).json({ error: 'Token de autenticação não fornecido.' });
+      }
+  
+      let userId: number;
+      try {
+        const decoded: any = jwt.verify(token, process.env.SECRET_KEY as string);
+        userId = decoded.id;
+      } catch (error) {
+        console.error('Erro ao decodificar o token:', error);
+        return res.status(401).json({ error: 'Token inválido ou expirado.' });
+      }
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+  
+      if (!user) {
+        return res.status(404).json({ error: 'Usuário não encontrado.' });
+      }
+  
+      return res.status(200).json(user);
+    } catch (error) {
+      console.error('Erro ao buscar o usuário:', error);
+      return res.status(500).json({ error: 'Erro ao buscar o usuário.' });
+    }
+  }
+  
 }
